@@ -5,7 +5,14 @@
  */
 package dk.cphbusiness.banking.data;
 
+import dk.cphbusiness.banking.model.BaseCustomer;
 import dk.cphbusiness.banking.model.Customer;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -14,21 +21,35 @@ import java.util.Collection;
  */
 public class BankDataOracleAccessor implements BankDataAccessor {
 
-    private static final String DRIVER = "oracle.jbdc.driver.OracleDriver";
+    private static final String DRIVER = "oracle.jdbc.driver.OracleDriver";
     private static final String DB_URL = "jdbc:oracle:thin:@datdb.cphbusiness.dk:1521:dat";
+    private static final String USERNAME = "cphjs224";
+    private static final String PASSWORD = "cphjs224";
 
-    public BankDataOracleAccessor() throws ClassNotFoundException {
-        try {
-            Class.forName(DRIVER);
-        } 
-        catch (ClassNotFoundException cnfe) {
-            throw cnfe;
-        }
+    public BankDataOracleAccessor() throws Exception {
+        Class.forName(DRIVER);
     }
 
     @Override
     public Customer saveCustomer(Customer customer) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        try (Connection connection = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD)) {
+            String sql = "insert into BANK_CUSTOMERS values (BANK_CUSTOMER_SEQUENCE.NEXTVAL, ?)";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setString(1, customer.getName());
+            statement.executeUpdate();
+            
+            String sql2 = "select * from BANK_CUSTOMERS order by ID desc";
+            PreparedStatement statement2 = connection.prepareStatement(sql2);
+            ResultSet result = statement2.executeQuery();
+            if (result.next()) {
+                return new BaseCustomer(result.getInt("ID"), result.getString("NAME"));
+            }
+            return null;
+
+        } catch (SQLException sqle) {
+            System.err.println(sqle);
+            return null;
+        }
     }
 
     @Override
@@ -38,7 +59,20 @@ public class BankDataOracleAccessor implements BankDataAccessor {
 
     @Override
     public Collection<Customer> listCustomers() {
-        throw new UnsupportedOperationException("Not supported yet.");
+            try (Connection connection = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD)) {
+            Collection<Customer> customers = new ArrayList();
+            String sql = "select * from BANK_CUSTOMERS order by ID";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet result = statement.executeQuery();
+            while (result.next()) {
+                customers.add (new BaseCustomer(result.getInt("ID"), result.getString("NAME")));
+            }
+            return customers;
+
+        } catch (SQLException sqle) {
+            System.err.println(sqle);
+            return null;
+        }
     }
 
 }

@@ -27,6 +27,7 @@ import javax.servlet.http.HttpSession;
  */
 @WebServlet(name = "BankServlet", urlPatterns = {"/Bank"})
 public class BankServlet extends HttpServlet {
+
     private BankManager manager;
 
     // This is a singleton implementation :)
